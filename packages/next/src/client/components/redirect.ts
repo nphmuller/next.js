@@ -85,14 +85,18 @@ export function permanentRedirect(
  * @returns true if the error is a redirect error
  */
 export function isRedirectError<U extends string>(
-  error: any
+  error: unknown
 ): error is RedirectError<U> {
-  if (typeof error?.digest !== 'string') return false
+  if (
+    typeof error !== 'object' ||
+    error === null ||
+    !('digest' in error) ||
+    typeof error?.digest !== 'string'
+  ) {
+    return false
+  }
 
-  const [errorCode, type, destination, status] = (error.digest as string).split(
-    ';',
-    4
-  )
+  const [errorCode, type, destination, status] = error.digest.split(';', 4)
 
   const statusCode = Number(status)
 
@@ -115,7 +119,7 @@ export function isRedirectError<U extends string>(
 export function getURLFromRedirectError<U extends string>(
   error: RedirectError<U>
 ): U
-export function getURLFromRedirectError(error: any): string | null {
+export function getURLFromRedirectError(error: unknown): string | null {
   if (!isRedirectError(error)) return null
 
   // Slices off the beginning of the digest that contains the code and the

@@ -79,6 +79,7 @@ import { MissingPostponeDataError } from './is-missing-postpone-error'
 import { DetachedPromise } from '../../lib/detached-promise'
 import { DYNAMIC_ERROR_CODE } from '../../client/components/hooks-server-context'
 import { useFlightResponse } from './use-flight-response'
+import { isNavigationSignalError } from '../../export/helpers/is-navigation-signal-error'
 
 export type GetDynamicParamFromSegment = (
   // [slug] / [[slug]] / [...slug]
@@ -1212,14 +1213,15 @@ async function renderToHTMLOrFlightImpl(
   clearTimeout(timeout)
 
   // If PPR is enabled and the postpone was triggered but lacks the postponed
-  // state information then we should error out unless the client side rendering
-  // bailout error was also emitted which indicates that part of the stream was
-  // not rendered.
+  // state information then we should error out unless the error was a
+  // navigation signal error or a client-side rendering bailout error.
   if (
     renderOpts.experimental.ppr &&
     staticGenerationStore.postponeWasTriggered &&
     !metadata.postponed &&
-    (!response.err || !isBailoutToCSRError(response.err))
+    (!response.err ||
+      (!isBailoutToCSRError(response.err) &&
+        !isNavigationSignalError(response.err)))
   ) {
     // a call to postpone was made but was caught and not detected by Next.js. We should fail the build immediately
     // as we won't be able to generate the static part
